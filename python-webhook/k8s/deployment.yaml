@@ -1,0 +1,71 @@
+---
+apiVersion: v1
+data:
+  tls.crt: <base64 encoded server certificate>
+  tls.key: <base64 encoded server key>
+kind: Secret
+metadata:
+  name: ca-key-pair
+  namespace: webhook
+type: kubernetes.io/tls
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-server
+  annotations:
+    webhook.dbd.in/v1: "required-value"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-server
+  template:
+    metadata:
+      labels:
+        app: webhook-server
+    spec:
+      containers:
+      - name: webhook-server
+        image: <image:tag>
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: certs
+          mountPath: "/app/certs"
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: ca-key-pair
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-server
+spec:
+  ports:
+  - port: 443
+    targetPort: 443
+  selector:
+    app: webhook-server
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: pod-annotation-validator
+webhooks:
+- name: pod-annotation.webhook.dbd.in
+  clientConfig:
+    service:
+      name: webhook-server
+      namespace: webhook
+      path: /validate
+    caBundle: <base64 encoded ca certificate>
+  rules:
+  - operations: ["CREATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  admissionReviewVersions: ["v1"]
+  sideEffects: None

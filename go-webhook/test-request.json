@@ -1,0 +1,47 @@
+{
+  "apiVersion": "admission.k8s.io/v1",
+  "kind": "AdmissionReview",
+  "request": {
+    "uid": "12345678-1234-1234-1234-1234567890ab",
+    "kind": {
+      "group": "",
+      "version": "v1",
+      "kind": "Pod"
+    },
+    "resource": {
+      "group": "",
+      "version": "v1",
+      "resource": "pods"
+    },
+    "namespace": "default",
+    "operation": "CREATE",
+    "userInfo": {
+      "username": "system:serviceaccount:kube-system:default",
+      "uid": "12345678-1234-1234-1234-1234567890cd",
+      "groups": ["system:serviceaccounts", "system:serviceaccounts:kube-system", "system:authenticated"]
+    },
+    "object": {
+      "metadata": {
+        "name": "test-pod",
+        "namespace": "default",
+        "annotations": {
+          "webhook.dbd.in/v1": "present"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "nginx",
+            "image": "nginx:latest"
+          }
+        ]
+      }
+    },
+    "oldObject": null,
+    "dryRun": false,
+    "options": {
+      "apiVersion": "meta.k8s.io/v1",
+      "kind": "CreateOptions"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-server
+  namespace: webhook
+  annotations:
+    webhook.dbd.in/v1: "required-value"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-server
+  template:
+    metadata:
+      labels:
+        app: webhook-server
+    spec:
+      containers:
+      - name: webhook-server
+        image: sdputurn/webhook-server:latest
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: certs
+          mountPath: "/app/certs"
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: ca-key-pair
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-server
+  namespace: webhook
+spec:
+  ports:
+  - port: 443
+    targetPort: 443
+  selector:
+    app: webhook-server
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: pod-annotation-validator
+webhooks:
+- name: pod-annotation.webhook.dbd.in
+  clientConfig:
+    service:
+      name: webhook-server
+      namespace: webhook
+      path: /validate
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUR2akNDQXFhZ0F3SUJBZ0lVYkZkMEg5U29jN2l4T2hmVHR1WCszemVxOXEwd0RRWUpLb1pJaHZjTkFRRUwKQlFBd1Z6RUxNQWtHQTFVRUJoTUNSRVV4RURBT0JnTlZCQWNNQjNkaGJHUnZjbVl4RERBS0JnTlZCQW9NQTFOQgpVREVPTUF3R0ExVUVDd3dGVTBGUVUwWXhHREFXQmdOVkJBTU1EMk4xYzNSdmJTMWpiMjV6ZFd4RFFUQWVGdzB5Ck5UQXhNVFl4TVRFME5EWmFGdzB5TmpBeE1UWXhNVEUwTkRaYU1GY3hDekFKQmdOVkJBWVRBa1JGTVJBd0RnWUQKVlFRSERBZDNZV3hrYjNKbU1Rd3dDZ1lEVlFRS0RBTlRRVkF4RGpBTUJnTlZCQXNNQlZOQlVGTkdNUmd3RmdZRApWUVFEREE5amRYTjBiMjB0WTI5dWMzVnNRMEV3Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLCkFvSUJBUUN2SStTRWZablZQcWQxSzlWeEFucGRibEdRKzJCdWs1Zm1OV0U4a2hqL2MzVnRKZkVwZkwzSGtkYUEKU3dENGtvaHJhbFVOa2hvUDVuM0Vlb3dMdUhFaHFleFA5ZXhTMmVwSkhMcmdNYXIxRjREQzUwSmZBa0laUG4xUwpSTGxiM2lzTGFqR1BXMEsxQWhWYThwZ3NyTERoN0tpa1EvMm5rVWRUN2xMMTRiaUdETDZjNnJJUjZLdThhZHdWCkhxcTRxMlVYbFJaN212UXhrSXcvV1NMT3RZK0UyTFBQZFgwOGNWbzhkeDhzblhCMmlpaDNDYWJaMDcrNHJZYzAKV2puNXhyNGJUTG4xM1g3Z0h4eDY2dmtuUWJCRHNVaUx4Tk9VTWFkZWovd01ibTZSc0NrR3ZSSk1kcFJJZXhnNgo4VFI2VTVEREVFZUpmd2xRbVZBOFlVTDlQWkpuQWdNQkFBR2pnWUV3ZnpBZEJnTlZIUTRFRmdRVWFydmhkcHZUCnBIM2wyYSsyR1VjUzVTdDl5Rnd3SHdZRFZSMGpCQmd3Rm9BVWFydmhkcHZUcEgzbDJhKzJHVWNTNVN0OXlGd3cKRHdZRFZSMFRBUUgvQkFVd0F3RUIvekFzQmdsZ2hrZ0JodmhDQVEwRUh4WWRUM0JsYmxOVFRDQkhaVzVsY21GMApaV1FnUTJWeWRHbG1hV05oZEdVd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFFSnc4R2wxbWNqNTVnNTZ5WmNXCko2bHM0OG5xRzhReUsxVkM3OUhQU0wrUHR2VlZjUzduRHFnVnNTMFlaZkdtcmpLd1JETXVQbzRwcmRabTlycGUKL25QMDhaZXFROTJRUkkzVGJvMFpnc3ZPbnVsRnhjZkwzQnNIVERRWlVNckVYNjNqam5VUTBoQ2hWOEw2ZHZPcQpoWDJ0RmlTakxPSnVONXloQytGZGRvRnhSaWg2bWNQT2VIUGY3T0xjNFNZSE1HMVFPTlJPaDhSaFpGZE5NM1VBCndZYk1tT3Q2N3g1c0Z1OURrRWdGTit1S2lad3dXTHJtR1podDBZY1ptek9CSjRjcGJIV21jdCtGSk5ON1ExTlgKZGl2SFdJRm1FTE9JdTd2bUNpTk9vRklFR2pwaHRVeUZKZUNEaVExY2c4ME5WcVB1L1FFL0lMa1NTWnV5SWRBSwpVS0k9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  rules:
+  - operations: ["CREATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  admissionReviewVersions: ["v1"]
+  sideEffects: None
